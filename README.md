@@ -38,7 +38,7 @@ This is a Next.js-based delivery slot management service with automatic slot ass
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+ (Use version in `.nvmrc`)
 - npm or yarn
 
 ### Installation Steps
@@ -118,6 +118,6 @@ This is a take-home assignment focusing on backend implementation. Please read t
 Currently, delivery slots are assigned automatically via a strategy pattern. Users have no control over their delivery time. Your task is to:
 
 1. Implement the ability for users to select a preferred delivery slot during order placement
-2. Add validation for the selected slot's availability 
+2. Add validation for the selected slot's availability
 3. Implement fallback logic when a selected slot is full
 4. Handle all related interdependencies across the codebase
