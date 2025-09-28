@@ -75,7 +75,6 @@ export async function createOrder(orderInput: IOrderInput): Promise<Order> {
           await incrementSlotUsage(deliverySlot.id, queryRunner);
         } else {
           // Fallback to automatic assignment
-          console.log(`Fallback to automatic assignment for order. Reason: ${validation.reason}`);
           deliverySlot = await assignDefaultSlot();
           if (deliverySlot) {
             deliverySlotId = deliverySlot.id;
