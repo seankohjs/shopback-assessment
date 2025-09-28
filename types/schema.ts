@@ -35,6 +35,7 @@ export interface IOrderInput {
   userId: number;
   addressId: number;
   items: IOrderItemInput[];
+  deliverySlotId?: number;
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';

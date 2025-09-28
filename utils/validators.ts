@@ -28,7 +28,15 @@ export function validateOrderInput(input: any): { valid: boolean; errors: string
     errors.push("addressId must be a number");
   }
 
-  
+  // Validate optional deliverySlotId
+  if (input.deliverySlotId !== undefined) {
+    if (typeof input.deliverySlotId !== 'number') {
+      errors.push("deliverySlotId must be a number");
+    } else if (input.deliverySlotId <= 0) {
+      errors.push("deliverySlotId must be a positive number");
+    }
+  }
+
   // Validate items array
   if (!input.items || !Array.isArray(input.items) || input.items.length === 0) {
     errors.push("items array is required and must not be empty");
