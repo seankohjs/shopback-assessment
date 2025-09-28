@@ -18,11 +18,20 @@ export async function POST(request: Request) {
     
     // Process the order creation
     try {
-      const result = await createOrder(body as IOrderInput);
-      
+      const orderInput = body as IOrderInput;
+      const result = await createOrder(orderInput);
+
+      // Calculate slot assignment details
+      const slotAssignment = {
+        requested: orderInput.deliverySlotId || null,
+        assigned: result.deliverySlotId,
+        wasRequested: Boolean(orderInput.deliverySlotId),
+        wasFallback: orderInput.deliverySlotId && orderInput.deliverySlotId !== result.deliverySlotId
+      };
+
       return NextResponse.json(
-        { 
-          success: true, 
+        {
+          success: true,
           message: "Order created successfully",
           data: {
             orderId: result.id,
@@ -30,7 +39,8 @@ export async function POST(request: Request) {
             deliverySlotId: result.deliverySlotId,
             totalAmount: result.totalAmount,
             status: result.status,
-            createdAt: result.createdAt
+            createdAt: result.createdAt,
+            slotAssignment
           }
         },
         { status: 201 }

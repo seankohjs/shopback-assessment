@@ -19,7 +19,7 @@ export interface IUserInput {
 export interface IOrder {
   id: number;
   userId: number;
-  deliverySlotId?: number;
+  deliverySlotId?: number | null;
   addressId: number;
   totalAmount: number;
   status: OrderStatus;
@@ -27,7 +27,7 @@ export interface IOrder {
   createdAt: Date;
   updatedAt: Date;
   user?: IUser;
-  deliverySlot?: IDeliverySlot;
+  deliverySlot?: IDeliverySlot | null;
   items?: IOrderItem[];
 }
 
@@ -35,6 +35,7 @@ export interface IOrderInput {
   userId: number;
   addressId: number;
   items: IOrderItemInput[];
+  deliverySlotId?: number;
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';

@@ -9,6 +9,7 @@ import {
 import { User } from "./User";
 import { DeliverySlot } from "./DeliverySlot";
 import type { OrderItem } from "./OrderItem";
+import type { OrderStatus } from "../../types/schema";
 
 @Entity()
 export class Order {
@@ -19,7 +20,7 @@ export class Order {
   userId!: number;
 
   @Column({ nullable: true })
-  deliverySlotId!: number;
+  deliverySlotId!: number | null;
 
   @Column()
   addressId!: number;
@@ -40,7 +41,7 @@ export class Order {
       "refunded",
     ],
   })
-  status!: string;
+  status!: OrderStatus;
 
   @Column({ nullable: true })
   notes!: string;

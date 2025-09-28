@@ -29,3 +29,6 @@ yarn-debug.log*
 # Sqlite Database
 data/
 /data
+
+# AI Context
+CLAUDE.MD
