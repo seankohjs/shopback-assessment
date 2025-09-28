@@ -19,7 +19,7 @@ export interface IUserInput {
 export interface IOrder {
   id: number;
   userId: number;
-  deliverySlotId?: number;
+  deliverySlotId?: number | null;
   addressId: number;
   totalAmount: number;
   status: OrderStatus;
@@ -27,7 +27,7 @@ export interface IOrder {
   createdAt: Date;
   updatedAt: Date;
   user?: IUser;
-  deliverySlot?: IDeliverySlot;
+  deliverySlot?: IDeliverySlot | null;
   items?: IOrderItem[];
 }
 
