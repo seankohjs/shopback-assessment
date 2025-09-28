@@ -12,7 +12,7 @@ const NOTIFICATION_TEMPLATES: Record<
   order_created: {
     title: "Order Confirmation",
     template:
-      "Your order #{orderId} has been received and is being processed. {deliveryInfo}",
+      "Your order #{orderId} has been received and is being processed. {deliveryInfo}{slotInfo}",
   },
   order_confirmed: {
     title: "Order Confirmed",
@@ -36,6 +36,22 @@ const NOTIFICATION_TEMPLATES: Record<
     template: "Your refund for order #{orderId} has been processed. {reason}",
   },
 };
+
+/**
+ * Generate slot selection information for notifications
+ */
+function formatSlotSelectionInfo(additionalData: Record<string, any>): string {
+  if (!additionalData.slotWasRequested) {
+    return "";
+  }
+
+  if (additionalData.slotRequestFulfilled) {
+    return " Your requested delivery time has been confirmed.";
+  } else {
+    const reason = additionalData.fallbackReason || "Requested slot was not available";
+    return ` Note: ${reason}. We've assigned you the next best available time slot.`;
+  }
+}
 
 /**
  * Format a delivery slot into a human-readable string
@@ -113,10 +129,14 @@ export async function notifyUser(
     // Get delivery information
     const deliveryInfo = await formatDeliveryTime(orderId);
 
+    // Get slot selection information
+    const slotInfo = formatSlotSelectionInfo(additionalData);
+
     // Prepare data for message interpolation
     const messageData = {
       orderId,
       deliveryInfo,
+      slotInfo,
       ...additionalData,
     };
 
