@@ -15,7 +15,8 @@ export enum RiskType {
   MULTIPLE_ADDRESSES = 'multiple_addresses',
   RAPID_ORDERS = 'rapid_orders',
   NEW_ACCOUNT = 'new_account',
-  PEAK_SLOT = 'peak_slot'
+  PEAK_SLOT = 'peak_slot',
+  USER_SELECTED_SLOT = 'user_selected_slot'
 }
 
 // Risk rule interface
@@ -197,10 +198,92 @@ export const NewAccountRule: RiskRule = {
   }
 };
 
+/**
+ * User Selected Slot Rule
+ * Detects potential fraud patterns in user-selected delivery slots
+ */
+export const UserSelectedSlotRule: RiskRule = {
+  name: 'User Selected Slot',
+  description: 'Detects potential fraud patterns when users manually select delivery slots',
+
+  async evaluate(order: IOrder, additionalData?: { wasSlotRequested?: boolean; requestedSlotId?: number; slotRequestFulfilled?: boolean }): Promise<{ score: number; triggered: boolean; details?: string }> {
+    // Only evaluate if this was a user-selected slot order
+    if (!additionalData?.wasSlotRequested) {
+      return { score: 0, triggered: false };
+    }
+
+    let score = 0;
+    let triggered = false;
+    let details = '';
+
+    // Get delivery slot information
+    const deliverySlot = order.deliverySlot;
+    if (!deliverySlot) {
+      return { score: 0, triggered: false };
+    }
+
+    const startTime = new Date(deliverySlot.startTime);
+    const now = new Date();
+
+    // Calculate time between order and delivery
+    const hoursUntilDelivery = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    // Risk factors for user-selected slots:
+
+    // 1. Very short notice delivery (less than 2 hours)
+    if (hoursUntilDelivery < 2 && hoursUntilDelivery > 0) {
+      score += 0.4;
+      details += 'Very short notice delivery requested. ';
+    }
+
+    // 2. Late night delivery (10 PM - 6 AM)
+    const deliveryHour = startTime.getHours();
+    if (deliveryHour >= 22 || deliveryHour <= 6) {
+      score += 0.3;
+      details += 'Late night/early morning delivery requested. ';
+    }
+
+    // 3. High-value order with specific slot selection
+    if (order.totalAmount > 300 && additionalData.wasSlotRequested) {
+      score += 0.2;
+      details += 'High-value order with manually selected delivery slot. ';
+    }
+
+    // 4. Requested slot was not available (potential slot manipulation attempt)
+    if (additionalData.wasSlotRequested && !additionalData.slotRequestFulfilled) {
+      score += 0.1;
+      details += 'Requested slot was unavailable (potential manipulation attempt). ';
+    }
+
+    // 5. New account with specific slot preference
+    if (order.user) {
+      const userCreatedAt = new Date(order.user.createdAt);
+      const accountAgeHours = (now.getTime() - userCreatedAt.getTime()) / (1000 * 60 * 60);
+
+      if (accountAgeHours < 24 && additionalData.wasSlotRequested) {
+        score += 0.3;
+        details += 'New account with specific delivery slot preference. ';
+      }
+    }
+
+    // Determine if this triggers an alert
+    if (score > 0.3) {
+      triggered = true;
+      details = details.trim();
+    }
+
+    // Cap the score at 1.0
+    score = Math.min(score, 1.0);
+
+    return { score, triggered, details };
+  }
+};
+
 // Export all rules
 export const riskRules: RiskRule[] = [
   HighValueRule,
   WeekendDeliveryRule,
   PeakSlotRule,
-  NewAccountRule
+  NewAccountRule,
+  UserSelectedSlotRule
 ]; 

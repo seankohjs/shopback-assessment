@@ -7,10 +7,12 @@ import { notifyAdmin } from "../notification/notifyAdmin";
 /**
  * Evaluates the risk level of an order
  * @param orderId Order ID to evaluate
+ * @param slotSelectionContext Optional context about slot selection for enhanced risk evaluation
  * @returns The created risk alert or null if no risk detected
  */
 export async function evaluateOrderRisk(
-  orderId: number
+  orderId: number,
+  slotSelectionContext?: { wasSlotRequested?: boolean; requestedSlotId?: number; slotRequestFulfilled?: boolean }
 ): Promise<RiskAlert | null> {
   // Initialize database connection
   const dataSource = await AppDataSource.initialize();
@@ -36,8 +38,8 @@ export async function evaluateOrderRisk(
     let riskDetails: string[] = [];
 
     for (const rule of riskRules) {
-      // Evaluate this rule for the order
-      const { score, triggered, details } = await rule.evaluate(order);
+      // Evaluate this rule for the order, passing slot selection context
+      const { score, triggered, details } = await rule.evaluate(order, slotSelectionContext);
 
       if (triggered) {
         // Add to details

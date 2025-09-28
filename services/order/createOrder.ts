@@ -10,6 +10,7 @@ import { calculatePrice } from "./calculatePrice";
 import { validateInventory } from "./validateInventory";
 import { validateSlotSelection } from "../delivery/validateSlotSelection";
 import { incrementSlotUsage } from "../delivery/updateSlotUsage";
+import { evaluateOrderRisk } from "../fraud/scan";
 
 /**
  * Creates a new order with the provided details
@@ -129,6 +130,23 @@ export async function createOrder(orderInput: IOrderInput): Promise<Order> {
       }
 
       await notifyUser(savedOrder.id, "order_created", user.id, notificationData);
+
+      // Step 8: Evaluate order for fraud risk
+      // Note: This runs after order creation but before transaction commit
+      // so that risk evaluation has access to the complete order data
+      try {
+        // Prepare slot selection context for enhanced fraud detection
+        const slotSelectionContext = orderInput.deliverySlotId ? {
+          wasSlotRequested: true,
+          requestedSlotId: orderInput.deliverySlotId,
+          slotRequestFulfilled: wasRequestedSlotUsed
+        } : undefined;
+
+        await evaluateOrderRisk(savedOrder.id, slotSelectionContext);
+      } catch (riskError) {
+        // Log risk evaluation errors but don't fail the order
+        console.error(`Risk evaluation failed for order ${savedOrder.id}:`, riskError);
+      }
 
       // Commit transaction
       await queryRunner.commitTransaction();
