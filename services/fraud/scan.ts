@@ -39,7 +39,9 @@ export async function evaluateOrderRisk(
 
     for (const rule of riskRules) {
       // Evaluate this rule for the order, passing slot selection context
-      const { score, triggered, details } = await rule.evaluate(order, slotSelectionContext);
+      // Cast the order to IOrder interface for compatibility
+      const orderForEvaluation = order as any;
+      const { score, triggered, details } = await rule.evaluate(orderForEvaluation, slotSelectionContext);
 
       if (triggered) {
         // Add to details
