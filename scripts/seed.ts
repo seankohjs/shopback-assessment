@@ -210,7 +210,7 @@ async function seedOrders(
     order.deliverySlotId = data.deliverySlotId!;
     order.addressId = data.addressId;
     order.totalAmount = data.totalAmount;
-    order.status = data.status;
+    order.status = data.status as any;
 
     const savedOrder = await orderRepository.save(order);
     orders.push(savedOrder);
