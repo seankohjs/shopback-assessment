@@ -8,6 +8,8 @@ import { assignDefaultSlot } from "../delivery/assignDefaultSlot";
 import { notifyUser } from "../notification/notifyUser";
 import { calculatePrice } from "./calculatePrice";
 import { validateInventory } from "./validateInventory";
+import { validateSlotSelection } from "../delivery/validateSlotSelection";
+import { incrementSlotUsage } from "../delivery/updateSlotUsage";
 
 /**
  * Creates a new order with the provided details
@@ -57,13 +59,33 @@ export async function createOrder(orderInput: IOrderInput): Promise<Order> {
       // Step 4: Assign delivery slot
       let deliverySlot: DeliverySlot | null = null;
       let deliverySlotId: number | null = null;
+      let wasRequestedSlotUsed = false;
 
-      // Use default strategy
-      deliverySlot = await assignDefaultSlot();
+      if (orderInput.deliverySlotId) {
+        // User selected a slot - validate it
+        const validation = await validateSlotSelection(orderInput.deliverySlotId);
+        if (validation.isValid && validation.slot) {
+          // Use the requested slot
+          deliverySlot = validation.slot;
+          deliverySlotId = deliverySlot.id;
+          wasRequestedSlotUsed = true;
 
-      // Set the delivery slot ID
-      if (deliverySlot) {
-        deliverySlotId = deliverySlot.id;
+          // Increment slot usage within the transaction
+          await incrementSlotUsage(deliverySlot.id, queryRunner);
+        } else {
+          // Fallback to automatic assignment
+          console.log(`Fallback to automatic assignment for order. Reason: ${validation.reason}`);
+          deliverySlot = await assignDefaultSlot();
+          if (deliverySlot) {
+            deliverySlotId = deliverySlot.id;
+          }
+        }
+      } else {
+        // No selection - use automatic assignment (existing behavior)
+        deliverySlot = await assignDefaultSlot();
+        if (deliverySlot) {
+          deliverySlotId = deliverySlot.id;
+        }
       }
 
       // Step 5: Create order
@@ -94,7 +116,19 @@ export async function createOrder(orderInput: IOrderInput): Promise<Order> {
       await orderItemRepository.save(orderItems);
 
       // Step 7: Notify user about order creation
-      await notifyUser(savedOrder.id, "order_created", user.id);
+      const notificationData: Record<string, any> = {};
+
+      // Add slot selection context for notification
+      if (orderInput.deliverySlotId) {
+        notificationData.slotWasRequested = true;
+        notificationData.requestedSlotId = orderInput.deliverySlotId;
+        notificationData.slotRequestFulfilled = wasRequestedSlotUsed;
+        if (!wasRequestedSlotUsed) {
+          notificationData.fallbackReason = "Requested slot was not available";
+        }
+      }
+
+      await notifyUser(savedOrder.id, "order_created", user.id, notificationData);
 
       // Commit transaction
       await queryRunner.commitTransaction();
